@@ -17,25 +17,23 @@ jobs:
           chmod +x ./setup.sh
           ./setup.sh
 
-      - name: Build Xcode Project
+      - name: Build Simulator Binary
         run: |
           xcodebuild -workspace Pyto.xcworkspace \
-                     -scheme Pyto \
-                     -configuration Release \
-                     -destination 'generic/platform=iOS' \
+                     -scheme "Pyto" \
+                     -configuration Debug \
+                     -sdk iphonesimulator \
+                     -destination 'generic/platform=iOS Simulator' \
                      CODE_SIGNING_ALLOWED=NO \
                      CODE_SIGNING_REQUIRED=NO \
                      CODE_SIGN_IDENTITY="" \
                      PROVISIONING_PROFILE_SPECIFIER="" \
-                     ONLY_ACTIVE_ARCH=NO \
-                     -allowProvisioningDeviceRegistration \
                      clean build
 
       - name: Package into IPA
         run: |
           mkdir -p Payload
-          # Locates the compiled bundle from Xcode's build paths
-          CP_PATH=$(find . -name "Pyto.app" -type d | head -n 1)
+          CP_PATH=$(find . -name "Pyto.app" -type d | grep -v "Intermediate" | head -n 1)
           if [ -z "$CP_PATH" ]; then
             echo "Error: Pyto.app not found!" && exit 1
           fi
