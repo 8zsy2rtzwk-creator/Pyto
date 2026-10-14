@@ -22,17 +22,24 @@ jobs:
           xcodebuild -workspace Pyto.xcworkspace \
                      -scheme Pyto \
                      -configuration Release \
-                     -sdk iphoneos \
+                     -destination 'generic/platform=iOS' \
                      CODE_SIGNING_ALLOWED=NO \
                      CODE_SIGNING_REQUIRED=NO \
                      CODE_SIGN_IDENTITY="" \
-                     ARCHS=arm64 \
+                     PROVISIONING_PROFILE_SPECIFIER="" \
+                     ONLY_ACTIVE_ARCH=NO \
+                     -allowProvisioningDeviceRegistration \
                      clean build
 
       - name: Package into IPA
         run: |
           mkdir -p Payload
-          cp -r build/Release-iphoneos/Pyto.app Payload/
+          # Locates the compiled bundle from Xcode's build paths
+          CP_PATH=$(find . -name "Pyto.app" -type d | head -n 1)
+          if [ -z "$CP_PATH" ]; then
+            echo "Error: Pyto.app not found!" && exit 1
+          fi
+          cp -r "$CP_PATH" Payload/
           zip -r Pyto.ipa Payload
 
       - name: Upload IPA Artifact
