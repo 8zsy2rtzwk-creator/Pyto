@@ -1,11 +1,10 @@
-# https://docs.github.com/en/actions/use-cases-and-examples/deploying/installing-an-apple-certificate-on-macos-runners-for-xcode-development
 name: Build Pyto IPA
 on:
-  workflow_dispatch: # Allows you to manually trigger the build
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-14 # This forces GitHub to give you a free virtual Mac
+    runs-on: macos-14
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -25,6 +24,8 @@ jobs:
                      -configuration Release \
                      -sdk iphoneos \
                      CODE_SIGNING_ALLOWED=NO \
+                     CODE_SIGNING_REQUIRED=NO \
+                     CODE_SIGN_IDENTITY="" \
                      ARCHS=arm64 \
                      clean build
 
@@ -35,7 +36,7 @@ jobs:
           zip -r Pyto.ipa Payload
 
       - name: Upload IPA Artifact
-        uses: actions/artifacts/upload-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           name: Pyto-Sideload-Package
           path: Pyto.ipa
