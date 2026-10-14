@@ -1,21 +1,41 @@
 # https://docs.github.com/en/actions/use-cases-and-examples/deploying/installing-an-apple-certificate-on-macos-runners-for-xcode-development
-
-name: build
+name: Build Pyto IPA
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  workflow_dispatch: # Allows you to manually trigger the build
+
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-14 # This forces GitHub to give you a free virtual Mac
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Run Pyto Setup Script
+        run: |
+          chmod +x ./setup.sh
+          ./setup.sh
+
+      - name: Build Xcode Project
+        run: |
+          xcodebuild -workspace Pyto.xcworkspace \
+                     -scheme Pyto \
+                     -configuration Release \
+                     -sdk iphoneos \
+                     CODE_SIGNING_ALLOWED=NO \
+                     ARCHS=arm64 \
+                     clean build
+
+      - name: Package into IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/Release-iphoneos/Pyto.app Payload/
+          zip -r Pyto.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/artifacts/upload-artifact@v4
         with:
-          python-version: "3.10"
-          allow-prereleases: true
-      - run: pip install --upgrade pip
-      - run: sudo xcode-select -switch /Applications/Xcode.app/Contents/Developer
-      - run: ./setup.sh
-      - run: xcodebuild -workspace Pyto.xcworkspace -scheme Pyto -configuration Release
+          name: Pyto-Sideload-Package
+          path: Pyto.ipa
