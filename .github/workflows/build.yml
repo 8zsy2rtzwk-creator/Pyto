@@ -17,13 +17,12 @@ jobs:
           chmod +x ./setup.sh
           ./setup.sh
 
-      - name: Build Simulator Binary
+      - name: Build Main Target Only
         run: |
-          xcodebuild -workspace Pyto.xcworkspace \
-                     -scheme "Pyto" \
+          xcodebuild -project Pyto/Pyto.xcodeproj \
+                     -target "Pyto" \
                      -configuration Debug \
                      -sdk iphonesimulator \
-                     -destination 'generic/platform=iOS Simulator' \
                      CODE_SIGNING_ALLOWED=NO \
                      CODE_SIGNING_REQUIRED=NO \
                      CODE_SIGN_IDENTITY="" \
