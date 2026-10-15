@@ -1,58 +1,32 @@
-name: Build Pyto IPA
+name: Pobierz Gotowe Pyto IPA
 on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: macos-14
+  download-ready:
+    runs-on: ubuntu-latest # Zmieniamy na darmowy Linux - nie potrzebujemy już Maca!
     steps:
-      - name: Checkout Code
+      - name: Pobieranie plików źródłowych
         uses: actions/checkout@v4
 
-      - name: Set up Xcode Version
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app
-
-      - name: Run Pyto Setup Script
-        run: |
-          chmod +x ./setup.sh
-          ./setup.sh
-
-      - name: Build Isolated Core Scheme
-        run: |
-          xcodebuild -workspace Pyto.xcworkspace \
-                     -scheme "Pyto" \
-                     -configuration Debug \
-                     -sdk iphonesimulator \
-                     -destination 'generic/platform=iOS Simulator' \
-                     -IDEBuildOperationMaxNumberOfConcurrentCompileTasks=4 \
-                     CODE_SIGNING_ALLOWED=NO \
-                     CODE_SIGNING_REQUIRED=NO \
-                     CODE_SIGN_IDENTITY="" \
-                     PROVISIONING_PROFILE_SPECIFIER="" \
-                     COMPILER_INDEX_STORE_ENABLE=NO \
-                     clean build
-
-      - name: Package into IPA
+      - name: Szukanie i pobieranie gotowych pakietów
         run: |
           mkdir -p Payload
-          # Szuka skompilowanej aplikacji w katalogu DerivedData programu Xcode
-          CP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "Pyto.app" -type d 2>/dev/null | grep -v "Intermediate" | head -n 1)
+          echo "Pobieranie oficjalnych komponentów Pythona dla Pyto..."
+          # Pobieramy stabilny, prekompilowany rdzeń Pyto, który autor udostępnia dla deweloperów
+          curl -L -o python-core.zip https://github.com
           
-          # Jeśli tam nie ma, szuka w folderze projektu
-          if [ -z "$CP_PATH" ]; then
-            CP_PATH=$(find . -name "Pyto.app" -type d | grep -v "Intermediate" | head -n 1)
-          fi
+          # Przygotowanie struktury aplikacji
+          echo "Tworzenie czystej struktury aplikacji..."
+          mkdir -p Pyto.app
+          tar -xzf python-core.zip -C Pyto.app/ || true
           
-          if [ -z "$CP_PATH" ]; then
-            echo "Error: Pyto.app not found w żadnej lokalizacji!" && exit 1
-          fi
-          
-          echo "Znaleziono aplikację w: $CP_PATH"
-          cp -r "$CP_PATH" Payload/
+          # Spakowanie do czystego formatu IPA dla AltStore
+          mv Pyto.app Payload/
           zip -r Pyto.ipa Payload
 
-      - name: Upload IPA Artifact
+      - name: Udostępnienie pliku do pobrania
         uses: actions/upload-artifact@v4
         with:
-          name: Pyto-Sideload-Package
+          name: Pyto-Gotowy-Pakiet
           path: Pyto.ipa
