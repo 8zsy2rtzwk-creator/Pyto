@@ -17,25 +17,37 @@ jobs:
           chmod +x ./setup.sh
           ./setup.sh
 
-      - name: Build Main Target Only
+      - name: Build Isolated Core Scheme
         run: |
-          xcodebuild -project Pyto/Pyto.xcodeproj \
-                     -target "Pyto" \
+          xcodebuild -workspace Pyto.xcworkspace \
+                     -scheme "Pyto" \
                      -configuration Debug \
                      -sdk iphonesimulator \
+                     -destination 'generic/platform=iOS Simulator' \
+                     -IDEBuildOperationMaxNumberOfConcurrentCompileTasks=4 \
                      CODE_SIGNING_ALLOWED=NO \
                      CODE_SIGNING_REQUIRED=NO \
                      CODE_SIGN_IDENTITY="" \
                      PROVISIONING_PROFILE_SPECIFIER="" \
+                     COMPILER_INDEX_STORE_ENABLE=NO \
                      clean build
 
       - name: Package into IPA
         run: |
           mkdir -p Payload
-          CP_PATH=$(find . -name "Pyto.app" -type d | grep -v "Intermediate" | head -n 1)
+          # Szuka skompilowanej aplikacji w katalogu DerivedData programu Xcode
+          CP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "Pyto.app" -type d 2>/dev/null | grep -v "Intermediate" | head -n 1)
+          
+          # Jeśli tam nie ma, szuka w folderze projektu
           if [ -z "$CP_PATH" ]; then
-            echo "Error: Pyto.app not found!" && exit 1
+            CP_PATH=$(find . -name "Pyto.app" -type d | grep -v "Intermediate" | head -n 1)
           fi
+          
+          if [ -z "$CP_PATH" ]; then
+            echo "Error: Pyto.app not found w żadnej lokalizacji!" && exit 1
+          fi
+          
+          echo "Znaleziono aplikację w: $CP_PATH"
           cp -r "$CP_PATH" Payload/
           zip -r Pyto.ipa Payload
 
